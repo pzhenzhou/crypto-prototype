@@ -57,6 +57,10 @@ func GetSeedGenerator(words map[common.Language][]string) *SeedGenerator {
 	return seedGeneratorInstance
 }
 
+// NewMnemonic
+// 1. Generate a 128-bit random number and add 4 bits of checksum to the random number to get a 132-bit number
+// 2. in every 11 bits to do the cut, get 12 binary numbers
+// 3. Use the number generated in the 2nd step to look up the word list defined by BIP39, so as to get 12  mnemonics
 func (g *SeedGenerator) NewMnemonic(input common.Language, count WordCount) (string, error) {
 	if !common.IsSupportLanguage(input) {
 		return "", unSupportLanguageError
