@@ -4,7 +4,7 @@
 
 This project is a simple bitcoin wallet HTTP service that implements the following features.
 
-1. generate helper words and seeds according to different languages, currently, only Chinese and English are supported.
+1. generate mnemonic and seeds according to different languages, currently, only Chinese and English are supported.
 2. generate HD SegWit Address based on seeds and paths
 3. generate multi-signature addresses (n-out-of-m Multisignature P2SH)
 
