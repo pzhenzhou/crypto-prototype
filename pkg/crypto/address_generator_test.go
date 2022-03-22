@@ -16,13 +16,6 @@ func TestHDSegWitAddress_Generate_IllegalArgs(t *testing.T) {
 	t.Log("address is ", address)
 	assert.Nil(t, nil, address)
 	assert.Error(t, err, ArgsMustBeNotNull)
-
-	args := map[GenerateArgs]interface{}{
-		InputPassword: "123",
-	}
-	address, err = addressGenerator.Generate(args)
-	assert.Nil(t, nil, address)
-	assert.Error(t, err, PasswordInvalid)
 }
 
 func TestHDSegWitAddress_Generate(t *testing.T) {

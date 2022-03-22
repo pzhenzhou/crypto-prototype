@@ -79,20 +79,18 @@ func NewHDSegWitAddress(seedGenerator *SeedGenerator) HDSegWitAddress {
 
 // Generate Produce HD SegWit address based on the given mnemonic and password
 // If the mnemonic is empty, the method automatically generates a 12-digit English mnemonic
-// The password length cannot be less than 6
+// If a password is not present, an empty string "" is used instead.
 func (h HDSegWitAddress) Generate(args map[GenerateArgs]interface{}) (*Address, error) {
 	if args == nil || len(args) == 0 {
 		return nil, ArgsMustBeNotNull
 	}
+	password := ""
 	if pwd, ok := args[InputPassword]; !ok {
-		return nil, PasswordInvalid
+		password = ""
 	} else {
-		if len(pwd.(string)) < 6 {
-			return nil, PasswordInvalid
-		}
+		password = pwd.(string)
 	}
 	path := args[InputPath].(string)
-	password := args[InputPassword].(string)
 	var seed []byte
 	mnemonic := args[InputSeed]
 	if inputMnemonic, ok := args[InputSeed]; !ok {
