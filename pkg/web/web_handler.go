@@ -7,7 +7,6 @@ import (
 	"github.com/pzhenzhou/crypto-prototype/pkg/crypto"
 	"go.uber.org/zap"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -18,10 +17,15 @@ const (
 
 type webHandler = func(c *gin.Context)
 
+// Response The response object of the web service
 type Response struct {
-	Code    int
-	Message string
-	Data    interface{}
+	// Similar in meaning to the return value of http status code.
+	// The difference is that the http protocol represents the transport level,
+	// while the code represents more of a business meaning.
+	// 200: Success, 400: bad request, 500: service inner error.
+	Code    int         `json:"code"`
+	Message string      `json:"message,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 func responseNoData(code int, message string) Response {
@@ -70,7 +74,7 @@ func HttpHandlerInit(port int) {
 	var startErr = router.Run(":" + strconv.Itoa(port))
 	if startErr != nil {
 		logger.Error("crypto httpServer start failure", zap.Error(startErr))
-		os.Exit(-1)
+		panic(startErr)
 	}
 }
 
@@ -81,18 +85,21 @@ func multiSigHandler() webHandler {
 		pks := c.Param("pks")
 		var multiPair = crypto.MultiSigNumPair{}
 		if mInt, err := strconv.Atoi(m); err != nil {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("M", m))
 			c.JSONP(http.StatusBadRequest,
 				responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "MultiSig M", m)))
 		} else {
 			multiPair.M = mInt
 		}
 		if nInt, err := strconv.Atoi(n); err != nil {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("n", n))
 			c.JSONP(http.StatusBadRequest,
 				responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "MultiSig M", n)))
 		} else {
 			multiPair.N = nInt
 		}
 		if len(pks) == 0 || pks == "" {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("PublicKeys", pks))
 			c.JSONP(http.StatusBadRequest,
 				responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "MultiSig M", n)))
 		}
@@ -115,8 +122,10 @@ func segWitAddressHandler() webHandler {
 	return func(c *gin.Context) {
 		path := c.Param("path")
 		if len(path) == 0 || path == "" {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
 			c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
 		} else {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
 			if !common.IsInvalidPath(path) {
 				c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
 			}

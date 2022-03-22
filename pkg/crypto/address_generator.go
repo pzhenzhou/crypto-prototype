@@ -23,12 +23,12 @@ const (
 )
 
 var (
+	ArgsMustBeNotNull        = errors.New("Input Args must be not null")
 	PasswordInvalid          = errors.New("Invalid password, Password must not be empty and len(password) >= 6")
-	MultiSigArgsInvalid      = errors.New("N-of-M MultiSig argument must not be empty.")
-	MultiSigNumValueInvalid  = errors.New("N-of-M MultiSig.invalid N or M")
-	MultiSigPublicKeyInvalid = errors.New("N-of-M MultiSig.invalid public key")
+	MultiSigArgsInvalid      = errors.New("n-out-of-m MultiSig argument must not be empty.")
+	MultiSigNumValueInvalid  = errors.New("n-out-of-m MultiSig.invalid N or M")
+	MultiSigPublicKeyInvalid = errors.New("n-out-of-m MultiSig.invalid public key")
 	seedGenerator            = GetSeedGenerator(common.GetWordList())
-	//hdSegWitAddressGenerator = crypto.NewHDSegWitAddress(seedGenerator)
 )
 
 type MultiSigNumPair struct {
@@ -77,7 +77,13 @@ func NewHDSegWitAddress(seedGenerator *SeedGenerator) HDSegWitAddress {
 	}
 }
 
+// Generate Produce HD SegWit address based on the given mnemonic and password
+// If the mnemonic is empty, the method automatically generates a 12-digit English mnemonic
+// The password length cannot be less than 6
 func (h HDSegWitAddress) Generate(args map[GenerateArgs]interface{}) (*Address, error) {
+	if args == nil || len(args) == 0 {
+		return nil, ArgsMustBeNotNull
+	}
 	if pwd, ok := args[InputPassword]; !ok {
 		return nil, PasswordInvalid
 	} else {
@@ -88,7 +94,7 @@ func (h HDSegWitAddress) Generate(args map[GenerateArgs]interface{}) (*Address, 
 	path := args[InputPath].(string)
 	password := args[InputPassword].(string)
 	var seed []byte
-	mnemonic := ""
+	mnemonic := args[InputSeed]
 	if inputMnemonic, ok := args[InputSeed]; !ok {
 		newMnemonic, err := h.seedGenerator.NewMnemonic(common.English, Word12)
 		if err != nil {
@@ -115,7 +121,7 @@ func (h HDSegWitAddress) Generate(args map[GenerateArgs]interface{}) (*Address, 
 		addressHash.EncodeAddress(),
 		bip32Key.PublicKey().B58Serialize(),
 		masterPrivateKey.B58Serialize(),
-		mnemonic,
+		mnemonic.(string),
 	}, nil
 }
 
@@ -145,21 +151,19 @@ func (m MultiSigAddress) Generate(args map[GenerateArgs]interface{}) (*Address, 
 	if len(publicKeys) != multiSig.M {
 		return nil, MultiSigPublicKeyInvalid
 	}
-
 	scriptBuilder := txscript.NewScriptBuilder()
 	scriptBuilder.AddOp(byte(0x50 + multiSig.N))
-	//	// add the public keys
+	// add the public keys
 	for _, public := range publicKeys {
 		scriptBuilder.AddData(public)
 	}
 	scriptBuilder.AddOp(byte(0x50 + multiSig.M))
-	// add the check-multi-sig op-code
+	// add the check-multi-sig OP_CODE
 	scriptBuilder.AddOp(txscript.OP_CHECKMULTISIG)
 	script, err := scriptBuilder.Script()
 	if err != nil {
 		return nil, err
 	}
-	//
 	redeemHash := btcutil.Hash160(script)
 	address, err := btcutil.NewAddressScriptHashFromHash(redeemHash, &chaincfg.MainNetParams)
 	if err != nil {
