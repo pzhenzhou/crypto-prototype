@@ -51,9 +51,9 @@ http get http://localhost:3456/segwit_address?mnemonic="legal winner thank year 
 | COMMENT     | Seed is encoded by calling method  **hex.EncodeToString(seed_byte)** to get |
 
 #### Example
-``shell
+```shell
 http get http://localhost:3456/segwit_address_from_seed?seed="2e8905819b8723fe2c1d161860e5ee1830318dbf49a83bd451cfb8440c28bd6fa457fe1296106559a3c80937a1c1069be3a3a5bd381ee6260e8d9739fce1f607"&path="m/44'/0'/0'/0/0"
-``
+```
 ```json
 {
     "code": 200,
