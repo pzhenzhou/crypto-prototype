@@ -32,7 +32,7 @@ func responseNoData(code int, message string) Response {
 	return Response{Code: code, Message: message, Data: nil}
 }
 
-func responseWithData(err error, address crypto.Address) (int, Response) {
+func responseWithData(err error, address *crypto.Address) (int, Response) {
 	if err != nil {
 		return http.StatusInternalServerError, Response{
 			http.StatusInternalServerError,
@@ -48,15 +48,16 @@ func responseWithData(err error, address crypto.Address) (int, Response) {
 }
 
 var (
-	addressGeneratorCaller = crypto.AddGeneratorCaller()
+	addressGeneratorCaller map[string]crypto.AddressGenerator
 	httpRouter             = map[string][]string{
-		"GET": {"/check_health", "/segwit_address/:seed/:path/:password", "/multisig_address/:m/:n/:pks"},
+		"GET": {"/check_health", "/segwit_address", "/segwit_address_from_seed", "/multisig_address/:m/:n/:pks"},
 	}
 
 	handlerFunc = map[string]webHandler{
-		"/check_health":                         checkHealth(),
-		"/segwit_address/:seed/:path/:password": segWitAddressHandler(),
-		"/multisig_address/:m/:n/:pks":          multiSigHandler(),
+		"/check_health":                checkHealth(),
+		"/segwit_address":              segWitAddressHandler(),
+		"/segwit_address_from_seed":    sedWitAddressFromSeedHandler(),
+		"/multisig_address/:m/:n/:pks": multiSigHandler(),
 	}
 	logger = common.GetLogger()
 )
@@ -65,6 +66,7 @@ func HttpHandlerInit(port int) {
 	if common.IsProd() {
 		gin.SetMode(gin.ReleaseMode)
 	}
+	addressGeneratorCaller = crypto.AddGeneratorCaller()
 	router := gin.Default()
 	for httpMethod, pathSlices := range httpRouter {
 		for _, path := range pathSlices {
@@ -113,32 +115,50 @@ func multiSigHandler() webHandler {
 			crypto.MultiSigPublicKey: pksBytes,
 		}
 		address, err := addressGeneratorCaller[crypto.NofMMultiSigAddressGenerator].Generate(args)
-		code, rsp := responseWithData(err, *address)
+		code, rsp := responseWithData(err, address)
 		c.JSONP(code, rsp)
+	}
+}
+
+func sedWitAddressFromSeedHandler() webHandler {
+	return func(c *gin.Context) {
+		checkPath(c)
+		path := strings.ReplaceAll(c.Query("path"), "\"", "")
+		args := map[crypto.GenerateArgs]interface{}{
+			crypto.InputSeed: c.Query("seed"),
+			crypto.InputPath: path,
+		}
+		address, err := addressGeneratorCaller[crypto.HDSegWitAddressGenerator].Generate(args)
+		code, rsp := responseWithData(err, address)
+		c.JSONP(code, rsp)
+	}
+}
+
+func checkPath(c *gin.Context) {
+	path := c.Query("path")
+	if len(path) == 0 || path == "" {
+		logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
+		c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
+	} else {
+		path = strings.ReplaceAll(path, "\"", "")
+		if !common.IsInvalidPath(path) {
+			logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
+			c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
+		}
 	}
 }
 
 func segWitAddressHandler() webHandler {
 	return func(c *gin.Context) {
-		path := c.Param("path")
-		if len(path) == 0 || path == "" {
-			logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
-			c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
-		} else {
-			logger.Warn("MultiSig invalid request parameter", zap.Any("path", path))
-			if !common.IsInvalidPath(path) {
-				c.JSONP(http.StatusBadRequest, responseNoData(http.StatusBadRequest, fmt.Sprintf(errorMessageFormat, "path", path)))
-			}
+		checkPath(c)
+		args := make(map[crypto.GenerateArgs]interface{})
+		args[crypto.InputPath] = strings.ReplaceAll(c.Query("path"), "\"", "")
+		if len(c.Query("mnemonic")) > 0 || c.Query("mnemonic") != "" {
+			args[crypto.InputMnemonic] = c.Query("mnemonic")
 		}
-
-		args := map[crypto.GenerateArgs]interface{}{
-			crypto.InputSeed:     c.Param("seed"),
-			crypto.InputPath:     path,
-			crypto.InputPassword: c.Param("password"),
-		}
+		args[crypto.InputPassword] = c.Query("password")
 		address, err := addressGeneratorCaller[crypto.HDSegWitAddressGenerator].Generate(args)
-
-		code, rsp := responseWithData(err, *address)
+		code, rsp := responseWithData(err, address)
 		c.JSONP(code, rsp)
 	}
 }

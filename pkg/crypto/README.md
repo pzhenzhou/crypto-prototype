@@ -1,4 +1,4 @@
-## What is the best way(s) to provide th seed ?
+## What is the best way(s) to provide the seed ?
 
 Seed phrases ( mnemonic) are now commonly applied to generate seeds. The main reasons for this are
 

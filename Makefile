@@ -1,18 +1,27 @@
+.PHONY: clean build
+
 BINARY_NAME=crypto-http
-
+BUILD := `git rev-parse HEAD`
 go=GO111MODULE=on go
-flags="-X main.buildstamp=`date -u '+%Y-%m-%d_%I:%M:%S%p'` -X main.githash=`git rev-parse --short HEAD`"
+LDFLAGS=-ldflags "-X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
 
-build-linux64:
-	GOARCH=amd64 GOOS=linux ${go} build -ldflags ${flags} -x -o bin/${BINARY_NAME}-linux main.go
+build: darwin  darwin-arm64 linux64
 
-build-darwin:
-	GOARCH=amd64 GOOS=darwin ${go} build -ldflags ${flags} -x -o bin/${BINARY_NAME}-darwin main.go
+darwin-arm64:
+	@GOARCH=arm64 GOOS=darwin ${go} build  ${LDFLAGS} -x -o bin/${BINARY_NAME}-arm64 ./cmd/main.go
 
-build-darwin-arm64:
-	GOOS=darwin GOARCH=arm64 ${go} build -ldflags ${flags} -x -o bin/${BINARY_NAME}-arm64 ./cmd/main.go
+darwin:
+	@GOARCH=amd64 GOOS=darwin ${go} build  ${LDFLAGS} -x -o bin/${BINARY_NAME}-darwin ./cmd/main.go
+
+linux64:
+	@GOARCH=amd64 GOOS=linux ${go} build ${LDFLAGS} -x -o bin/${BINARY_NAME}-linux64 ./cmd/main.go
+
+format:
+	@gofmt -l -w ./pkg/crypto ./cmd
+
+run_test:
+	@${go} test ./pkg/crypto -v
 
 clean:
 	go clean
-	rm bin/${BINARY_NAME}-*
-
+	rm ./bin/${BINARY_NAME}-*

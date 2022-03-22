@@ -134,17 +134,18 @@ func initLogger() {
 	logger = zapLogger
 }
 
+// IsInvalidPath m/purpose'/coin'/account'/ change/address_index
 func IsInvalidPath(path string) bool {
 	if len(strings.Split(path, "/")) > 2 {
 		indexSlice := strings.Split(path, "/")[1]
 		child := GetChild(indexSlice)
 		for _, code := range bitcoinPropose {
-			if child != uint32(code)+0x80000000 {
-				return false
+			if child == uint32(code)+0x80000000 {
+				return true
 			}
 		}
 	}
-	return true
+	return false
 }
 
 func GetChild(index string) uint32 {

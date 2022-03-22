@@ -24,7 +24,7 @@ func TestHDSegWitAddress_Generate(t *testing.T) {
 	args := map[GenerateArgs]interface{}{
 		InputPassword: "TREZOR",
 		InputPath:     "m/44'/0'/0'/0/0",
-		InputSeed:     "legal winner thank year wave sausage worth useful legal winner thank yellow",
+		InputMnemonic: "legal winner thank year wave sausage worth useful legal winner thank yellow",
 	}
 	address, err := addressGenerator.Generate(args)
 	t.Logf("HD SegWit Address %v", address)

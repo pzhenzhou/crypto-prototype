@@ -49,6 +49,7 @@ type SeedGenerator struct {
 func GetSeedGenerator(words map[common.Language][]string) *SeedGenerator {
 	if seedGeneratorInstance == nil {
 		once.Do(func() {
+			logger.Info("SeedGenerator Init", zap.Any("WordsLen", len(words)))
 			seedGeneratorInstance = &SeedGenerator{
 				bip39Word: words,
 			}
