@@ -40,6 +40,9 @@ export CRYPTO_RUN_ENV=prod
 ### Web Service API
 [Web Doc](./pkg/web/README.md)
 
+### What is the best way to provide the seed?
+[provide the seed](./pkg/crypto/README.md)
+
 ### Third-party lib
 1. https://github.com/btcsuite/btcd
 2. https://github.com/tyler-smith/go-bip32
